@@ -9,6 +9,7 @@ import static org.lwjgl.opengl.GL11.glDrawElements;
 import static org.lwjgl.opengl.GL11.glPolygonMode;
 import static org.lwjgl.opengl.GL15.glBindBuffer;
 
+import org.joml.Math;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -16,6 +17,7 @@ import org.joml.Vector4f;
 import comp3170.GLBuffers;
 import comp3170.Shader;
 import comp3170.ShaderLibrary;
+import static comp3170.Math.TAU;
 
 public class Scene {
 
@@ -28,6 +30,16 @@ public class Scene {
 	private int indexBuffer;
 	private Vector3f[] colours;
 	private int colourBuffer;
+	
+	private Matrix4f modelMatrix = new Matrix4f();
+	private Matrix4f transMatrix = new Matrix4f();
+	private Matrix4f rotMatrix = new Matrix4f();
+	private Matrix4f scalMatrix = new Matrix4f();
+	
+	final private Vector3f OFFSET = new Vector3f(0.65f,0.0f, 0.0f);
+	final private float MOVEMENT_SPEED = 8f;
+	final private float SCALE_RATE = 0.08f;
+	final private float ROTATION_RATE = TAU/6;
 
 	private Shader shader;
 
@@ -77,7 +89,29 @@ public class Scene {
 			// @formatter:on
 
 		indexBuffer = GLBuffers.createIndexBuffer(indices);
-
+		//different outputs
+			//point right
+				//rotationMatrix(4.7f, rotMatrix);
+			//bottom right, scaled down, pointing up
+				//translationMatrix(0.5f, -0.5f, transMatrix);
+				//scaleMatrix(0.5f, 0.5f, scalMatrix);
+				
+			//top right, scaled down, pointing to corner
+				//translationMatrix(-0.64f, 0.64f, transMatrix);
+				//rotationMatrix(0.75f, rotMatrix);
+				//scaleMatrix(0.5f, 0.5f, scalMatrix);
+			
+			//modelMatrix.mul(transMatrix).mul(rotMatrix).mul(scalMatrix);
+		
+		modelMatrix.translate(OFFSET).scale(SCALE_RATE);
+			
+	}
+	
+	public void update(float deltaTime) {
+		
+		float movement = MOVEMENT_SPEED * deltaTime;
+		float rotation = ROTATION_RATE * deltaTime;
+		modelMatrix.translate(0.0f,movement,0.0f).rotateZ(rotation);
 	}
 
 	public void draw() {
@@ -85,6 +119,8 @@ public class Scene {
 		shader.enable();
 		// set the attributes
 		shader.setAttribute("a_position", vertexBuffer);
+		shader.setUniform("u_modelMatrix", modelMatrix);
+		
 		shader.setAttribute("a_colour", colourBuffer);
 
 		// draw using index buffer
@@ -94,6 +130,7 @@ public class Scene {
 		glDrawElements(GL_TRIANGLES, indices.length, GL_UNSIGNED_INT, 0);
 
 	}
+	
 
 	/**
 	 * Set the destination matrix to a translation matrix. Note the destination
@@ -135,6 +172,11 @@ public class Scene {
 	public static Matrix4f rotationMatrix(float angle, Matrix4f dest) {
 
 		// TODO: Your code here
+		
+		dest.m00((float) Math.cos(angle));
+		dest.m01((float) Math.sin(angle));
+		dest.m10((float) Math.sin(-angle));
+		dest.m11((float) Math.cos(angle));
 
 		return dest;
 	}
@@ -152,6 +194,9 @@ public class Scene {
 	public static Matrix4f scaleMatrix(float sx, float sy, Matrix4f dest) {
 
 		// TODO: Your code here
+		dest.identity();
+		dest.m00(sx);
+		dest.m11(sy);
 
 		return dest;
 	}
